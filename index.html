@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s;
+            background-color: #f0f4f8;
+        }
+        #gameContainer, #authContainer, #shopContainer {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            text-align: center;
+            width: 350px;
+            display: none; /* Hide by default */
+            transition: transform 0.3s; /* Add transition for scaling */
+        }
+        #gameContainer:hover, #authContainer:hover, #shopContainer:hover {
+            transform: scale(1.05); /* Scale up on hover */
+        }
+        h1 {
+            font-size: 28px;
+            margin: 0 0 20px;
+            color: #333;
+        }
+        input[type="text"], input[type="password"], input[type="number"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #74ebd5;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #74ebd5;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s; /* Add transition for scaling */
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #acb6e5;
+            transform: scale(1.05); /* Scale up button on hover */
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            height: 50px;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        #highScore, #money {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #shopButton {
+            background-color: #ffce54;
+        }
+        #shopButton:hover {
+            background-color: #ffb736;
+        }
+        #signOutButton {
+            background-color: #007bff; /* Blue color */
+        }
+        #signOutButton:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="authContainer">
+    <h1>Sign Up</h1>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="authButton">Sign Up</button>
+    <div id="authMessage"></div>
+</div>
+
+<div id="gameContainer">
+    <h1>Guess the Number!</h1>
+    <p>I'm thinking of a number between 1 and 100.</p>
+    <input type="number" id="guessInput" placeholder="Enter your guess" min="1" max="100">
+    <button id="submitGuess">Submit Guess</button>
+    <button id="resetButton">Reset Game</button>
+    
+    <div class="button-container">
+        <button id="shopButton">Shop</button>
+        <button id="signOutButton">Sign Out</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="highScore">High Score (Lowest Guesses): 0</div>
+    <div id="money">Money: $0</div>
+</div>
+
+<div id="shopContainer">
+    <h1>Shop</h1>
+    <p>Change UI Color:</p>
+    <button id="colorGreen">Green</button>
+    <button id="colorBlue">Blue</button>
+    <button id="colorRed">Red</button>
+    <button id="backToGame">Back to Game</button>
+</div>
+
+<script>
+    let randomNumber, guessCount, highScore, currentUser, userMoney;
+    const messageDisplay = document.getElementById('message');
+    const submitButton = document.getElementById('submitGuess');
+    const guessInput = document.getElementById('guessInput');
+    const highScoreDisplay = document.getElementById('highScore');
+    const resetButton = document.getElementById('resetButton');
+    const authButton = document.getElementById('authButton');
+    const authMessage = document.getElementById('authMessage');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const authContainer = document.getElementById('authContainer');
+    const gameContainer = document.getElementById('gameContainer');
+    const shopContainer = document.getElementById('shopContainer');
+    const moneyDisplay = document.getElementById('money');
+    const signOutButton = document.getElementById('signOutButton');
+
+    // Initialize game
+    function initGame() {
+        randomNumber = Math.floor(Math.random() * 100) + 1;
+        guessCount = 0;
+        highScore = localStorage.getItem(`${currentUser}_highScore`) ? parseInt(localStorage.getItem(`${currentUser}_highScore`)) : Infinity;
+        userMoney = localStorage.getItem(`${currentUser}_money`) ? parseInt(localStorage.getItem(`${currentUser}_money`)) : 0;
+        highScoreDisplay.textContent = highScore < Infinity ? `High Score (Lowest Guesses): ${highScore}` : "High Score (Lowest Guesses): N/A";
+        moneyDisplay.textContent = `Money: $${userMoney}`;
+    }
+
+    // Update message display
+    function updateMessage(text, isSuccess = false) {
+        messageDisplay.textContent = text;
+        messageDisplay.className = isSuccess ? 'success' : 'error';
+    }
+
+    // Handle guess submission
+    submitButton.addEventListener('click', () => {
+        const userGuess = Number(guessInput.value);
+        guessCount++;
+
+        if (userGuess < 1 || userGuess > 100) {
+            updateMessage("Please enter a number between 1 and 100.");
+        } else if (userGuess > randomNumber) {
+            updateMessage("Too high! Try again.");
+        } else if (userGuess < randomNumber) {
+            updateMessage("Too low! Try again.");
+        } else {
+            userMoney += 10; // Earn money for guessing correctly
+            localStorage.setItem(`${currentUser}_money`, userMoney); // Store updated money
+            moneyDisplay.textContent = `Money: $${userMoney}`;
+            updateMessage(`Congratulations! You guessed it in ${guessCount} tries!`, true);
+            if (guessCount < highScore) {
+                highScore = guessCount;
+                localStorage.setItem(`${currentUser}_highScore`, highScore);
+                highScoreDisplay.textContent = `High Score (Lowest Guesses): ${highScore}`;
+            }
+            resetButton.style.display = 'block'; // Show reset button
+        }
+        guessInput.value = ''; // Clear the input
+    });
+
+    // Reset game
+    resetButton.addEventListener('click', () => {
+        resetButton.style.display = 'none'; // Hide reset button
+        initGame(); // Reinitialize the game
+        messageDisplay.textContent = '';
+    });
+
+    // Handle user authentication
+    authButton.addEventListener('click', () => {
+        const username = usernameInput.value;
+        const password = passwordInput.value;
+
+        if (username && password) {
+            // Check if the username already exists
+            if (localStorage.getItem(username)) {
+                authMessage.textContent = "Username already exists. Please choose another.";
+                authMessage.className = 'error';
+            } else {
+                // Save user credentials
+                localStorage.setItem(username, password);
+                currentUser = username;
+                localStorage.setItem('currentUser', username);
+                authContainer.style.display = 'none'; // Hide auth container
+                gameContainer.style.display = 'block'; // Show game container
+                initGame(); // Start the game
+            }
+        } else {
+            authMessage.textContent = "Please enter a valid username and password.";
+            authMessage.className = 'error';
+        }
+    });
+
+    // Sign out
+    signOutButton.addEventListener('click', () => {
+        localStorage.removeItem('currentUser');
+        currentUser = null;
+        gameContainer.style.display = 'none'; // Hide game container
+        authContainer.style.display = 'block'; // Show auth container
+    });
+
+    // Shop functionality
+    document.getElementById('shopButton').addEventListener('click', () => {
+        shopContainer.style.display = 'block'; // Show shop container
+        gameContainer.style.display = 'none'; // Hide game container
+    });
+
+    // Color options
+    document.getElementById('colorGreen').addEventListener('click', () => {
+        document.body.style.backgroundColor = '#d4edda'; // Light green
+        gameContainer.style.backgroundColor = '#c3e6cb'; // Light green for game container
+    });
+
+    document.getElementById('colorBlue').addEventListener('click', () => {
+        document.body.style.backgroundColor = '#cce5ff'; // Light blue
+        gameContainer.style.backgroundColor = '#b8daff'; // Light blue for game container
+    });
+
+    document.getElementById('colorRed').addEventListener('click', () => {
+        document.body.style.backgroundColor = '#f8d7da'; // Light red
+        gameContainer.style.backgroundColor = '#f5c6cb'; // Light red for game container
+    });
+
+    // Back to game from shop
+    document.getElementById('backToGame').addEventListener('click', () => {
+        shopContainer.style.display = 'none'; // Hide shop container
+        gameContainer.style.display = 'block'; // Show game container
+    });
+
+    // Check for existing user session
+    currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+        authContainer.style.display = 'none'; // Hide auth container
+        gameContainer.style.display = 'block'; // Show game container
+        initGame(); // Start the game
+    } else {
+        authContainer.style.display = 'block'; // Show auth container
+    }
+</script>
+
+</body>
+</html>
